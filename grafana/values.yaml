@@ -1,0 +1,39 @@
+# Admin credentials
+adminUser: admin
+adminPassword: admin
+
+# Datasource configuration (Prometheus)
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        access: proxy
+        isDefault: true
+
+# Persistence settings (optional)
+persistence:
+  enabled: true
+  existingClaim: grafana-pvc
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+
+# Security context settings
+securityContext:
+  runAsUser: 472
+  fsGroup: 472
+
+# Grafana sidecar (disabled as we're not provisioning dashboards)
+sidecar:
+  dashboards:
+    enabled: false
+
+# Dashboard provisioning (disabled since we're not using dashboards)
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers: []
