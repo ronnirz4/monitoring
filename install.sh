@@ -1,5 +1,4 @@
-# Create install.sh content
-install_sh = """#!/bin/bash
+#!/bin/bash
 
 set -e
 
@@ -81,6 +80,22 @@ EOF
 echo "🔄 Upgrading Prometheus with new scrape configs..."
 helm upgrade prometheus prometheus-community/prometheus -f values.yaml -n monitoring
 
+##############################################
+# 🔧 Fix Prometheus pod permissions inside pod
+##############################################
+echo "⏳ Waiting for Prometheus pod to be ready..."
+kubectl wait --namespace monitoring \
+  --for=condition=Ready pod \
+  --selector=app.kubernetes.io/component=server \
+  --timeout=120s
+
+PROM_POD=$(kubectl get pods -n monitoring -l app.kubernetes.io/component=server -o jsonpath="{.items[0].metadata.name}")
+
+echo "🔐 Fixing file permissions inside Prometheus pod ($PROM_POD)..."
+kubectl exec -n monitoring "$PROM_POD" -- /bin/sh -c "mkdir -p /data && chown -R 65534:65534 /data"
+
+##############################################
+
 echo "📦 Creating Grafana PVC..."
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
@@ -141,11 +156,3 @@ echo "✅ Installation complete!"
 echo "🌐 To access Prometheus: kubectl port-forward -n monitoring svc/prometheus-server 9090:80"
 echo "🌐 To access Grafana:   kubectl port-forward -n monitoring svc/grafana 3000:80"
 echo "➡️ Then open http://localhost:3000 (user: admin / pass: admin)"
-"""
-
-# Save to file
-with open("/mnt/data/install.sh", "w") as f:
-    f.write(install_sh)
-
-"/mnt/data/install.sh"
-
